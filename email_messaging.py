@@ -1,19 +1,10 @@
 import smtplib
 import ssl
-from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import pytz
-
-from conf import SENDER_EMAIL, SENDER_PW, RECEIVER_EMAIL, TIME_FORMAT
+from conf import SENDER_EMAIL, SENDER_PW, RECEIVER_EMAIL, SMTP_SERVER, EMAIL_PORT
 from data_models import TradeRecord
-
-JST = pytz.timezone('Asia/Tokyo')
-current_time = datetime.now(JST).strftime(TIME_FORMAT)
-
-PORT = 465  # For SSL
-SMTP_SERVER = "smtp.gmail.com"
 
 
 def build_success_trade(trades: [TradeRecord]) -> str:
@@ -39,7 +30,7 @@ def low_balance(remaining_balance, amount_needed):
 
 
 def insufficient_balance(remaining_balance, amount_needed, additional_message):
-    return '{}<br>Additional information: {}'.format(low_balance(remaining_balance, amount_needed), additional_message)
+    return '{}Additional information:<br>{}'.format(low_balance(remaining_balance, amount_needed), additional_message)
 
 
 def build_email_html(message: str) -> str:
@@ -63,10 +54,6 @@ def send_email(email_html: str, subject: str):
 
     # Create a secure SSL context
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(SMTP_SERVER, PORT, context=context) as server:
+    with smtplib.SMTP_SSL(SMTP_SERVER, EMAIL_PORT, context=context) as server:
         server.login(SENDER_EMAIL, SENDER_PW)
         server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, message.as_string())
-
-
-def test_fun(num: int) -> int:
-    return num + num

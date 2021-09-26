@@ -11,10 +11,10 @@ https://github.com/viniciuschiele/flask-apscheduler for documentation of more co
 https://viniciuschiele.github.io/flask-apscheduler/
 
 """
-from datetime import datetime
-
 from flask import Flask
 from flask_apscheduler import APScheduler
+
+from trade import run as run_trades
 
 
 class TestObj:
@@ -40,17 +40,11 @@ scheduler.init_app(app)
 scheduler.start()
 
 
-@scheduler.task('interval', id='do_job_1', seconds=30, misfire_grace_time=900)
-def job1():
-    """Demo job function.
-    :param var_two:
-    """
-    now = datetime.now()
-
-    current_time = now.strftime("%H:%M:%S")
-    myObj.time = current_time
-    print("Updated Obj Time Successfully")
-    print(myObj)
+@scheduler.task('interval', id='trade', seconds=5, misfire_grace_time=900)
+def trade_job():
+    if run_trades() != 0:
+        scheduler.shutdown(wait=False)
+        print("Periodic job has been paused. Fixed the issue and restart the server again.")
     return
 
 

@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from functools import reduce
+from importlib import reload
 
 import cbpro
 import pytz
@@ -9,6 +10,15 @@ import conf as cf
 import db_ops
 import email_messaging as em
 from data_models import TradeRecord
+
+
+class TradeExceptionError(Exception):
+    def __init__(self, exception_details, email_title, error: Exception = None):
+        self.message = exception_details
+        if error:
+            self.message += '<br>{}'.format(repr(error))
+        self.email_title = email_title
+        super().__init__(self.message)
 
 
 def get_cash_balance(client: cbpro.AuthenticatedClient, currency='USD') -> (float, str):
@@ -21,15 +31,14 @@ def get_cash_balance(client: cbpro.AuthenticatedClient, currency='USD') -> (floa
 def pretrade_checks() -> cbpro.AuthenticatedClient:
     auth_client = cbpro.AuthenticatedClient(key=cf.CB_API_KEY,
                                             b64secret=cf.CB_API_SECRET,
-                                            passphrase=cf.CB_PASSPHRASE,
-                                            api_url='https://api-public.sandbox.pro.coinbase.com')
+                                            passphrase=cf.CB_PASSPHRASE)
+    # api_url='https://api-public.sandbox.pro.coinbase.com') # for sandbox
     cash_needed = reduce(lambda x, y: x + y, map(lambda trade: trade.amount, cf.TRADES_TO_MAKE))
     cash_available, msg = get_cash_balance(auth_client)
 
     if cash_needed > cash_available:
-        email_msg = em.build_email_html(em.insufficient_balance(cash_available, cash_needed, msg))
-        em.send_email(email_msg, "TradeBot ERROR: Insufficient Balance")
-        exit(1)
+        raise TradeExceptionError(exception_details=em.insufficient_balance(cash_available, cash_needed, msg),
+                                  email_title='TradeBot ERROR: Insufficient Balance')
     elif cash_needed * 2 > cash_available:
         email_msg = em.build_email_html(em.low_balance(cash_available, cash_needed))
         em.send_email(email_msg, "TradeBot INFO: Low Balance Reminder")
@@ -37,11 +46,11 @@ def pretrade_checks() -> cbpro.AuthenticatedClient:
 
 
 def execute_trades(client: cbpro.AuthenticatedClient):
-    JST = pytz.timezone('Asia/Tokyo')
+    jst = pytz.timezone('Asia/Tokyo')
     settled_trades: [TradeRecord] = []
     unsettled_trades: [TradeRecord] = []
     for trade_instr in cf.TRADES_TO_MAKE:
-        trade_time = datetime.now(JST).strftime(cf.TIME_FORMAT)
+        trade_time = datetime.now(jst).strftime(cf.TIME_FORMAT)
         order = client.place_market_order(product_id=trade_instr.product, side=trade_instr.direction,
                                           funds=trade_instr.amount)
         time.sleep(3)
@@ -72,22 +81,50 @@ def persist_trades(all_trades: [TradeRecord]):
     ### test that persisting to mongo succeeded. if persisting failed then exit process
     if not (collection.find_one({'trade_id': all_trades[-1].trade_id})):
         # couldn't find what we just persisted'
-        email_msg = em.build_email_html('Trade succeeded but could not persist record to MongoDB.')
-        em.send_email(email_msg, "TradeBot ERROR: Persisting Trades Failed")
-        exit(1)
+        raise TradeExceptionError(exception_details='Trade succeeded but could not persist record to MongoDB.',
+                                  email_title='TradeBot ERROR: Persisting Trades to MongoDB Failed')
     return
 
 
-def run():
+def time_to_trade():
+    now = datetime.now()
+    trade_day = now.strftime('%A').lower() == cf.TRADE_DAY.lower()
+    if not trade_day:
+        print("Not trade day! Today is {} and trade day is {}".format(now.strftime('%A'), cf.TRADE_DAY))
+        return False
+
+    # check if trade already made today
     try:
+        collection = db_ops.start_mongo()
+        most_recent_time = datetime.strptime(db_ops.get_most_recent(collection)['time'], cf.TIME_FORMAT)
+        already_traded = most_recent_time.date() == now.date()
+    except Exception as e:
+        # couldn't find the record we want in MongoDB'
+        raise TradeExceptionError(exception_details='Could not find existing records in MongoDB.',
+                                  email_title='TradeBot ERROR: Retrieving Info From MongoDB Failed',
+                                  error=e) from e
+    if already_traded:
+        print("Already made a trade today.")
+        return False
+    print("It is time to trade.")
+    return True
+
+
+def run():
+    reload(cf)
+
+    try:
+        if time_to_trade() is False:
+            return 0
         client = pretrade_checks()
         executed_trades = execute_trades(client)
         persist_trades(executed_trades)
+    except TradeExceptionError as e:
+        email_msg = em.build_email_html(e.message)
+        em.send_email(email_msg, e.email_title)
+        return 1
     except Exception as e:
-        email_msg = em.build_email_html(e)
+        email_msg = em.build_email_html(str(e))
         em.send_email(email_msg, "TradeBot ERROR: Investigate")
-        raise Exception
+        return 1
     return 0
-
-
-run()
