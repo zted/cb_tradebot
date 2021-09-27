@@ -1,7 +1,10 @@
 import smtplib
 import ssl
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+import pytz
 
 from conf import SENDER_EMAIL, SENDER_PW, RECEIVER_EMAIL, SMTP_SERVER, EMAIL_PORT
 from data_models import TradeRecord
@@ -44,8 +47,9 @@ def build_email_html(message: str) -> str:
 
 
 def send_email(email_html: str, subject: str):
+    date_str = datetime.now(pytz.timezone('Asia/Tokyo')).date()
     message = MIMEMultipart("alternative")
-    message["Subject"] = subject
+    message["Subject"] = subject + " " + date_str
     message["From"] = SENDER_EMAIL
     message["To"] = RECEIVER_EMAIL
 
