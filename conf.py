@@ -18,7 +18,7 @@ SENDER_PW = ""  # real password to login into email
 RECEIVER_EMAIL = ""  # the email address to receive emails
 
 ### Timing Conf
-TIME_FORMAT = '%Y:%m:%d %H:%M:%S %Z'
+TIME_FORMAT = '%Y/%m/%d %H:%M:%S %Z'
 TRADE_DAY = 'Monday'
 
 ### Trade Parameters
