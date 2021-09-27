@@ -5,11 +5,14 @@ from importlib import reload
 
 import cbpro
 import pytz
+from dateutil import parser
 
 import conf as cf
 import db_ops
 import email_messaging as em
 from data_models import TradeRecord
+
+JST = pytz.timezone('Asia/Tokyo')
 
 
 class TradeExceptionError(Exception):
@@ -46,11 +49,10 @@ def pretrade_checks() -> cbpro.AuthenticatedClient:
 
 
 def execute_trades(client: cbpro.AuthenticatedClient):
-    jst = pytz.timezone('Asia/Tokyo')
     settled_trades: [TradeRecord] = []
     unsettled_trades: [TradeRecord] = []
     for trade_instr in cf.TRADES_TO_MAKE:
-        trade_time = datetime.now(jst).strftime(cf.TIME_FORMAT)
+        trade_time = datetime.now(JST).strftime(cf.TIME_FORMAT)
         order = client.place_market_order(product_id=trade_instr.product, side=trade_instr.direction,
                                           funds=trade_instr.amount)
         time.sleep(3)
@@ -96,7 +98,7 @@ def time_to_trade():
     # check if trade already made today
     try:
         collection = db_ops.start_mongo()
-        most_recent_time = datetime.strptime(db_ops.get_most_recent(collection)['time'], cf.TIME_FORMAT)
+        most_recent_time = parser.parse(db_ops.get_most_recent(collection)['time'], tzinfos=JST)
         already_traded = most_recent_time.date() == now.date()
     except Exception as e:
         # couldn't find the record we want in MongoDB'
