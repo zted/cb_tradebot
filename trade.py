@@ -99,7 +99,8 @@ def time_to_trade():
     # check if trade already made today
     try:
         collection = db_ops.start_mongo()
-        most_recent_time = parser.parse(db_ops.get_most_recent(collection)['time'], tzinfo={'JST': gettz('Asia/Tokyo')})
+        most_recent_time = parser.parse(db_ops.get_most_recent(collection)['time'],
+                                        tzinfos={'JST': gettz('Asia/Tokyo')})
         already_traded = most_recent_time.date() == now.date()
     except Exception as e:
         # couldn't find the record we want in MongoDB'
