@@ -6,6 +6,7 @@ from importlib import reload
 import cbpro
 import pytz
 from dateutil import parser
+from dateutil.tz import gettz
 
 import conf as cf
 import db_ops
@@ -89,7 +90,7 @@ def persist_trades(all_trades: [TradeRecord]):
 
 
 def time_to_trade():
-    now = datetime.now()
+    now = datetime.now(JST)
     trade_day = now.strftime('%A').lower() == cf.TRADE_DAY.lower()
     if not trade_day:
         print("Not trade day! Today is {} and trade day is {}".format(now.strftime('%A'), cf.TRADE_DAY))
@@ -98,7 +99,7 @@ def time_to_trade():
     # check if trade already made today
     try:
         collection = db_ops.start_mongo()
-        most_recent_time = parser.parse(db_ops.get_most_recent(collection)['time'], tzinfos=JST)
+        most_recent_time = parser.parse(db_ops.get_most_recent(collection)['time'], tzinfo={'JST': gettz('Asia/Tokyo')})
         already_traded = most_recent_time.date() == now.date()
     except Exception as e:
         # couldn't find the record we want in MongoDB'
