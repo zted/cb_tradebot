@@ -49,7 +49,7 @@ def build_email_html(message: str) -> str:
 def send_email(email_html: str, subject: str):
     date_str = datetime.now(pytz.timezone('Asia/Tokyo')).date()
     message = MIMEMultipart("alternative")
-    message["Subject"] = subject + " " + date_str
+    message["Subject"] = subject + " " + str(date_str)
     message["From"] = SENDER_EMAIL
     message["To"] = RECEIVER_EMAIL
 

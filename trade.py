@@ -114,8 +114,8 @@ def run():
     reload(cf)
 
     try:
-        if time_to_trade() is False:
-            return 0
+        # if time_to_trade() is False:
+        #     return 0
         client = pretrade_checks()
         executed_trades = execute_trades(client)
         persist_trades(executed_trades)
