@@ -65,6 +65,7 @@ def execute_trades(client: cbpro.AuthenticatedClient):
             settled_trades.append(trade_record)
         else:
             unsettled_trades.append(trade_record)
+    print("Successfully finished trading.")
 
     if settled_trades:
         email_msg = em.build_email_html(em.build_success_trade(settled_trades))
@@ -91,9 +92,10 @@ def persist_trades(all_trades: [TradeRecord]):
 
 def time_to_trade():
     now = datetime.now(JST)
-    trade_day = now.strftime('%A').lower() == cf.TRADE_DAY.lower()
-    if not trade_day:
-        print("Not trade day! Today is {} and trade day is {}".format(now.strftime('%A'), cf.TRADE_DAY))
+    same_trade_day = now.strftime('%A').lower() == cf.TRADE_DAY.lower()
+    print("Current time is {}".format(now.strftime(cf.TIME_FORMAT)))
+    if not same_trade_day:
+        print("Trade day is {}, going back to sleep.".format(cf.TRADE_DAY))
         return False
 
     # check if trade already made today
