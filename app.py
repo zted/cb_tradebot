@@ -40,7 +40,7 @@ scheduler.init_app(app)
 scheduler.start()
 
 
-@scheduler.task('interval', id='trade', days=1, misfire_grace_time=900)
+@scheduler.task('interval', id='trade', hours=12, misfire_grace_time=900)
 def trade_job():
     if run_trades() != 0:
         scheduler.shutdown(wait=False)
