@@ -43,7 +43,7 @@ def pretrade_checks() -> cbpro.AuthenticatedClient:
     if cash_needed > cash_available:
         raise TradeExceptionError(exception_details=em.insufficient_balance(cash_available, cash_needed, msg),
                                   email_title='TradeBot ERROR: Insufficient Balance')
-    elif cash_needed * 2 > cash_available:
+    elif int(cash_needed * 3) >= int(cash_available):
         email_msg = em.build_email_html(em.low_balance(cash_available, cash_needed))
         em.send_email(email_msg, "TradeBot INFO: Low Balance Reminder")
     return auth_client
