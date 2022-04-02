@@ -61,3 +61,14 @@ def send_email(email_html: str, subject: str):
     with smtplib.SMTP_SSL(SMTP_SERVER, EMAIL_PORT, context=context) as server:
         server.login(SENDER_EMAIL, SENDER_PW)
         server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, message.as_string())
+
+
+def test_email():
+    try:
+        message = "This is a test email!"
+        subj = "Mic check 123"
+        send_email(build_email_html(message), subj)
+        return True
+    except Exception as e:
+        print("Test email failed due to: {}".format(str(e)))
+        return False

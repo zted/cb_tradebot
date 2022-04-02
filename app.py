@@ -14,6 +14,7 @@ https://viniciuschiele.github.io/flask-apscheduler/
 from flask import Flask
 from flask_apscheduler import APScheduler
 
+from email_messaging import test_email
 from trade import run as run_trades
 
 
@@ -48,6 +49,15 @@ def trade_job():
     return
 
 
+def other_test():
+    return True
+
+
+def preflight_checks_passed():
+    pass_conditions = test_email() and other_test()
+    return pass_conditions
+
+
 @app.route("/hello/<string:name>")
 def hello(name: str) -> str:
     return "Hello {} and welcome!".format(name)
@@ -64,4 +74,7 @@ def hello2(name: str) -> str:
 
 
 if __name__ == "__main__":
-    app.run()
+    if preflight_checks_passed():
+        app.run()
+    else:
+        exit(1)
