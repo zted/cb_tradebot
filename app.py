@@ -75,6 +75,7 @@ def hello2(name: str) -> str:
 
 if __name__ == "__main__":
     if preflight_checks_passed():
+        print("Preflight checks passed! App will run")
         app.run()
     else:
         exit(1)
