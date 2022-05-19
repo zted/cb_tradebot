@@ -19,7 +19,7 @@ RECEIVER_EMAIL = ""  # the email address to receive emails
 
 ### Timing Conf
 TIME_FORMAT = '%Y/%m/%d %H:%M:%S %Z'
-TRADE_DAY = 'Monday'
+TRADE_DAYS = set(['Monday', 'Wednesday', 'Friday'])
 
 ### Trade Parameters
 TRADES_TO_MAKE = [
