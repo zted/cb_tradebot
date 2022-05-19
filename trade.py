@@ -93,7 +93,7 @@ def persist_trades(all_trades: [TradeRecord]):
 def time_to_trade():
     now = datetime.now(JST)
     today = now.strftime('%A')
-    same_trade_day = today.lower() in cf.TRADE_DAYS
+    same_trade_day = today in cf.TRADE_DAYS
     print("Current time is {} {}".format(today, now.strftime(cf.TIME_FORMAT)))
     if not same_trade_day:
         print("Trade days are {}, going back to sleep.".format(cf.TRADE_DAYS))
